@@ -1,0 +1,5 @@
+{
+  "name": "Politico_Transcript",
+  "description": "An application that uses the Gemini API to listen to videos and audios and transcribe them into both English and Hindi and outputs the results as 10 second time stamps in an excel file in both Hindi and English separately.",
+  "requestFramePermissions": []
+}
