@@ -10,11 +10,19 @@ import { ErrorIcon } from './components/icons/ErrorIcon';
 
 declare const XLSX: any;
 
+// A simple unique ID generator
+const generateUniqueId = () => {
+  // Combine timestamp and random string for uniqueness
+  return `tx_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 11)}`;
+};
+
+
 const App: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [transcription, setTranscription] = useState<Transcription | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [uniqueId, setUniqueId] = useState<string | null>(null);
 
   const handleFileSelect = useCallback(async (selectedFile: File) => {
     if (!selectedFile) return;
@@ -23,6 +31,7 @@ const App: React.FC = () => {
     setIsLoading(true);
     setTranscription(null);
     setError(null);
+    setUniqueId(generateUniqueId()); // Generate and set unique ID
 
     try {
       const reader = new FileReader();
@@ -57,12 +66,14 @@ const App: React.FC = () => {
     setTranscription(null);
     setError(null);
     setIsLoading(false);
+    setUniqueId(null); // Reset unique ID
   };
 
   const handleExport = useCallback(() => {
-    if (!transcription || !file) return;
+    if (!transcription || !file || !uniqueId) return;
 
     const data = transcription.map(segment => ({
+      'unique_id': uniqueId,
       'Start Time (s)': segment.startTime.toFixed(2),
       'End Time (s)': segment.endTime.toFixed(2),
       'English Transcription': segment.english,
@@ -75,6 +86,7 @@ const App: React.FC = () => {
 
     // Set column widths for better readability
     const colWidths = [
+      { wch: 25 }, // unique_id
       { wch: 15 }, // Start Time
       { wch: 15 }, // End Time
       { wch: 60 }, // English
@@ -83,7 +95,7 @@ const App: React.FC = () => {
     worksheet['!cols'] = colWidths;
 
     XLSX.writeFile(workbook, `${file.name.split('.').slice(0, -1).join('.')}_transcription.xlsx`);
-  }, [transcription, file]);
+  }, [transcription, file, uniqueId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-slate-800 text-gray-200 font-sans">
@@ -110,15 +122,25 @@ const App: React.FC = () => {
             
             {!isLoading && file && (transcription || error) && (
               <div className="flex flex-col items-center">
-                <div className="w-full bg-slate-800 border border-slate-700 rounded-lg p-4 flex items-center gap-4 mb-6">
-                  <FileIcon className="w-6 h-6 text-cyan-400 flex-shrink-0" />
-                  <p className="font-mono text-sm text-gray-300 truncate flex-grow">{file.name}</p>
-                   <button
-                    onClick={resetState}
-                    className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300 flex-shrink-0"
-                  >
-                    New File
-                  </button>
+                <div className="w-full bg-slate-800 border border-slate-700 rounded-lg p-4 flex items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-4 truncate">
+                    <FileIcon className="w-6 h-6 text-cyan-400 flex-shrink-0" />
+                    <p className="font-mono text-sm text-gray-300 truncate">{file.name}</p>
+                  </div>
+                  <div className="flex items-center gap-4 flex-shrink-0">
+                    {uniqueId && (
+                      <div className="hidden sm:flex items-center gap-2 bg-slate-700/50 border border-slate-600 px-3 py-1 rounded-full">
+                          <span className="text-xs font-mono text-gray-400">ID:</span>
+                          <span className="text-xs font-mono text-cyan-400 select-all">{uniqueId}</span>
+                      </div>
+                    )}
+                    <button
+                      onClick={resetState}
+                      className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300"
+                    >
+                      New File
+                    </button>
+                  </div>
                 </div>
 
                 {error && (
